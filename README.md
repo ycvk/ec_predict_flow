@@ -91,4 +91,7 @@ npm run dev
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
+## 技术交流群
+https://t.me/EC_Predict_Flow
+
 
