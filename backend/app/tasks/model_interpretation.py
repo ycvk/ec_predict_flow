@@ -114,6 +114,12 @@ def generate_shap_plots(self, model_file: str):
         plots_dir = os.path.join(settings.PLOTS_DIR, f'{base_name}_shap')
         os.makedirs(plots_dir, exist_ok=True)
 
+        # 清除目录中已有文件
+        for file in os.listdir(plots_dir):
+            file_path = os.path.join(plots_dir, file)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
         # 生成summary plots
         # 1. Bar plot (全局重要性)
         plt.figure(figsize=(10, 8))
