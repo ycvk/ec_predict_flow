@@ -17,25 +17,6 @@
 - 🔍 **模型分析** - 使用代理模型筛选关键特征,得到对应的判断阈值
 - 📉 **构建回测** - 根据特征的判断阈值构建回测策略,并完成回测
 
-## 工作流程
-
-系统采用模块化设计，每个模块负责工作流程中的特定步骤。整个流程执行以下顺序：
-
-1. 数据下载
-2. 特征计算
-3. 模型训练
-4. 模型解释
-5. 模型分析
-6. 构建回测
-
-## 技术栈
-
-- **前端**: vite + Element Plus
-- **后端**: Python + FastAPI
-- **机器学习**: LightGBM + SHAP
-- **数据处理**: Pandas + NumPy
-
-
 ## 安装和运行
 
 ### 后端设置
@@ -91,7 +72,7 @@ npm run dev
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## Docker运行方法
+## Docker运行
   构建并启动所有服务
 ```
 docker-compose up -d
@@ -127,6 +108,7 @@ docker-compose up -d --build
 
 ## 技术交流群
 https://t.me/EC_Predict_Flow
+
 
 
 
