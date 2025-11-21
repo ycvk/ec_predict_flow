@@ -17,7 +17,41 @@
 - 🔍 **模型分析** - 使用代理模型筛选关键特征,得到对应的判断阈值
 - 📉 **构建回测** - 根据特征的判断阈值构建回测策略,并完成回测
 
-## 安装和运行
+## Docker运行
+  构建并启动所有服务
+```
+docker-compose up -d
+```
+  查看服务状态
+```
+docker-compose ps
+```
+  查看日志
+```
+docker-compose logs -f
+```
+  停止服务
+```
+docker-compose down
+```
+  重新构建镜像
+```
+docker-compose up -d --build
+```
+  服务说明
+
+  - Redis (端口 6379) - 消息队列和缓存
+  - Backend (端口 8000) - FastAPI 后端服务
+  - Celery Worker - 异步任务处理
+  - Frontend (端口 80) - Nginx 提供的前端服务
+
+  访问地址
+
+  - Docker运行前端应用: http://localhost
+  - Docker运行后端 API: http://localhost:8000
+  - Docker运行API 文档: http://localhost:8000/docs
+
+## 本机安装和运行
 
 ### 后端设置
 
@@ -72,42 +106,9 @@ npm run dev
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## Docker运行
-  构建并启动所有服务
-```
-docker-compose up -d
-```
-  查看服务状态
-```
-docker-compose ps
-```
-  查看日志
-```
-docker-compose logs -f
-```
-  停止服务
-```
-docker-compose down
-```
-  重新构建镜像
-```
-docker-compose up -d --build
-```
-  服务说明
-
-  - Redis (端口 6379) - 消息队列和缓存
-  - Backend (端口 8000) - FastAPI 后端服务
-  - Celery Worker - 异步任务处理
-  - Frontend (端口 80) - Nginx 提供的前端服务
-
-  访问地址
-
-  - Docker运行前端应用: http://localhost
-  - Docker运行后端 API: http://localhost:8000
-  - Docker运行API 文档: http://localhost:8000/docs
-
 ## 技术交流群
 https://t.me/EC_Predict_Flow
+
 
 
 
