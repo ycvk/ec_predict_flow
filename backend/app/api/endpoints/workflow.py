@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.schemas.workflow import (
-    DataDownloadRequest, FeatureCalculationRequest, LabelCalculationRequest, ModelTrainingRequest,
-    ModelInterpretationRequest, ModelAnalysisRequest, BacktestConstructionRequest,
+    DataDownloadRequest, FeatureCalculationRequest, LabelCalculationRequest, LabelCalculationV2Request,
+    ModelTrainingRequest, ModelInterpretationRequest, ModelAnalysisRequest, BacktestConstructionRequest,
     BacktestExecutionRequest, TaskResponse, TaskStatusResponse
 )
 from app.tasks import (
@@ -58,6 +58,25 @@ async def start_label_calculation(request: LabelCalculationRequest):
         task_id=task.id,
         status="pending",
         message="Label calculation task started"
+    )
+
+
+@router.post("/label-calculation-v2", response_model=TaskResponse)
+async def start_label_calculation_v2(request: LabelCalculationV2Request):
+    task = label_calculation.calculate_labels_v2.delay(
+        data_file=request.data_file,
+        look_forward=request.look_forward,
+        label_type=request.label_type,
+        filter_type=request.filter_type,
+        threshold=request.threshold,
+        methods=request.methods,
+        buffer_multiplier=request.buffer_multiplier,
+        avg_score_threshold=request.avg_score_threshold
+    )
+    return TaskResponse(
+        task_id=task.id,
+        status="pending",
+        message="Label calculation V2 task started"
     )
 
 
