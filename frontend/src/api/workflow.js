@@ -23,6 +23,10 @@ export const workflowAPI = {
     return api.post('/label-calculation', params)
   },
 
+  startLabelCalculationV2(params) {
+    return api.post('/label-calculation-v2', params)
+  },
+
   startModelTraining(params) {
     return api.post('/model-training', params)
   },
