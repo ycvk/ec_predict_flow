@@ -291,6 +291,234 @@
             </div>
           </div>
         </el-card>
+
+        <!-- 标签计算V2卡片 -->
+        <el-card class="calculation-card" style="margin-top: 20px;">
+          <template #header>
+            <h2>标签计算 V2 </h2>
+          </template>
+
+          <el-form :model="labelV2Form" label-width="140px">
+            <el-form-item label="数据文件">
+              <el-select
+                v-model="labelV2Form.dataFile"
+                placeholder="选择数据文件"
+                filterable
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="file in rawFiles"
+                  :key="file.filename"
+                  :label="file.filename"
+                  :value="file.filename"
+                >
+                  <span>{{ file.filename }}</span>
+                  <span style="float: right; color: #8492a6; font-size: 13px">
+                    {{ file.size_mb }}MB
+                  </span>
+                </el-option>
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="标签类型">
+              <el-radio-group v-model="labelV2Form.labelType">
+                <el-radio label="up">上涨标签</el-radio>
+                <el-radio label="down">下跌标签</el-radio>
+              </el-radio-group>
+            </el-form-item>
+
+            <el-form-item label="过滤指标">
+              <el-radio-group v-model="labelV2Form.filterType">
+                <el-radio label="rsi">RSI过滤</el-radio>
+                <el-radio label="cti">CTI过滤</el-radio>
+              </el-radio-group>
+            </el-form-item>
+
+            <el-form-item label="过滤阈值">
+              <div v-if="labelV2Form.filterType === 'rsi'">
+                <div style="margin-bottom: 10px;">
+                  <span style="margin-right: 10px;">上涨标签阈值 (RSI &lt;):</span>
+                  <el-input-number
+                    v-model="labelV2Form.rsiUpThreshold"
+                    :min="0"
+                    :max="100"
+                    :step="1"
+                    style="width: 120px;"
+                  />
+                </div>
+                <div>
+                  <span style="margin-right: 10px;">下跌标签阈值 (RSI &gt;):</span>
+                  <el-input-number
+                    v-model="labelV2Form.rsiDownThreshold"
+                    :min="0"
+                    :max="100"
+                    :step="1"
+                    style="width: 120px;"
+                  />
+                </div>
+              </div>
+              <div v-else>
+                <div style="margin-bottom: 10px;">
+                  <span style="margin-right: 10px;">上涨标签阈值 (CTI &lt;):</span>
+                  <el-input-number
+                    v-model="labelV2Form.ctiUpThreshold"
+                    :min="-1"
+                    :max="1"
+                    :step="0.1"
+                    :precision="1"
+                    style="width: 120px;"
+                  />
+                </div>
+                <div>
+                  <span style="margin-right: 10px;">下跌标签阈值 (CTI &gt;):</span>
+                  <el-input-number
+                    v-model="labelV2Form.ctiDownThreshold"
+                    :min="-1"
+                    :max="1"
+                    :step="0.1"
+                    :precision="1"
+                    style="width: 120px;"
+                  />
+                </div>
+              </div>
+              <div style="margin-top: 5px; color: #909399; font-size: 12px;">
+                <span v-if="labelV2Form.labelType === 'up' && labelV2Form.filterType === 'rsi'">
+                  当前设置: RSI &lt; {{ labelV2Form.rsiUpThreshold }}
+                </span>
+                <span v-if="labelV2Form.labelType === 'down' && labelV2Form.filterType === 'rsi'">
+                  当前设置: RSI &gt; {{ labelV2Form.rsiDownThreshold }}
+                </span>
+                <span v-if="labelV2Form.labelType === 'up' && labelV2Form.filterType === 'cti'">
+                  当前设置: CTI &lt; {{ labelV2Form.ctiUpThreshold }}
+                </span>
+                <span v-if="labelV2Form.labelType === 'down' && labelV2Form.filterType === 'cti'">
+                  当前设置: CTI &gt; {{ labelV2Form.ctiDownThreshold }}
+                </span>
+              </div>
+            </el-form-item>
+
+            <el-form-item label="预测周期">
+              <el-input-number v-model="labelV2Form.lookForward" :min="1" :max="60" />
+              <span style="margin-left: 10px; color: #909399; font-size: 12px;">
+                预测未来多少个K线周期
+              </span>
+            </el-form-item>
+
+            <el-form-item label="改进方法">
+              <el-checkbox-group v-model="labelV2Form.methods">
+                <el-checkbox label="safety_buffer">
+                  安全垫方法 (推荐)
+                  <el-tooltip content="要求价格涨幅超过ATR的倍数，过滤微弱上涨" placement="top">
+                    <el-icon style="margin-left: 5px;"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </el-checkbox>
+                <el-checkbox label="average_price">
+                  平均价格法
+                  <el-tooltip content="评估整个周期质量，区分快反弹和慢反弹" placement="top">
+                    <el-icon style="margin-left: 5px;"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </el-checkbox>
+                <el-checkbox label="multi_horizon">
+                  多周期共振
+                  <el-tooltip content="要求中间点和终点都满足方向，确保快速反弹" placement="top">
+                    <el-icon style="margin-left: 5px;"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </el-checkbox>
+              </el-checkbox-group>
+              <div style="margin-top: 5px; color: #909399; font-size: 12px;">
+                可选择多个方法组合，所有条件必须同时满足（AND逻辑）
+              </div>
+            </el-form-item>
+
+            <el-form-item label="安全垫倍数" v-if="labelV2Form.methods.includes('safety_buffer')">
+              <el-input-number
+                v-model="labelV2Form.bufferMultiplier"
+                :min="0.1"
+                :max="2.0"
+                :step="0.1"
+                :precision="1"
+              />
+              <span style="margin-left: 10px; color: #909399; font-size: 12px;">
+                ATR的倍数，默认0.5
+              </span>
+            </el-form-item>
+
+            <el-form-item label="平均分数阈值" v-if="labelV2Form.methods.includes('average_price')">
+              <el-input-number
+                v-model="labelV2Form.avgScoreThreshold"
+                :min="-10"
+                :max="10"
+                :step="0.1"
+                :precision="1"
+              />
+              <span style="margin-left: 10px; color: #909399; font-size: 12px;">
+                平均偏离度阈值，默认0.0
+              </span>
+            </el-form-item>
+
+            <el-form-item>
+              <el-button
+                type="primary"
+                @click="startLabelCalculationV2"
+                :loading="labelV2Loading"
+                :disabled="!labelV2Form.dataFile || labelV2Form.methods.length === 0"
+              >
+                计算标签 V2
+              </el-button>
+              <el-button @click="loadRawFiles" :icon="Refresh">刷新文件列表</el-button>
+            </el-form-item>
+          </el-form>
+
+          <el-divider />
+
+          <div v-if="labelV2TaskId" class="task-status">
+            <h3>标签计算V2任务状态</h3>
+            <el-descriptions :column="1" border>
+              <el-descriptions-item label="任务ID">{{ labelV2TaskId }}</el-descriptions-item>
+              <el-descriptions-item label="状态">
+                <el-tag :type="getStatusType(labelV2TaskStatus)">{{ labelV2TaskStatus }}</el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="进度" v-if="labelV2Progress !== null">
+                <el-progress :percentage="Math.round(labelV2Progress)" />
+              </el-descriptions-item>
+              <el-descriptions-item label="当前状态" v-if="labelV2StatusMessage">
+                {{ labelV2StatusMessage }}
+              </el-descriptions-item>
+            </el-descriptions>
+
+            <div v-if="labelV2Result" class="result-info">
+              <h4>计算结果</h4>
+              <el-descriptions :column="2" border style="margin-top: 10px;">
+                <el-descriptions-item label="标签文件">{{ labelV2Result.labels_file }}</el-descriptions-item>
+                <el-descriptions-item label="基于数据文件">{{ labelV2Result.data_file }}</el-descriptions-item>
+                <el-descriptions-item label="使用方法">{{ labelV2Result.methods?.join(' + ') }}</el-descriptions-item>
+                <el-descriptions-item label="预测周期">{{ labelV2Result.look_forward }}</el-descriptions-item>
+              </el-descriptions>
+
+              <div v-if="labelV2Result.label_stats" style="margin-top: 10px;">
+                <h5>标签统计</h5>
+                <el-descriptions :column="2" border size="small">
+                  <el-descriptions-item label="总样本数">
+                    {{ labelV2Result.label_stats.total_samples }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="非空标签数">
+                    {{ labelV2Result.label_stats.non_nan_labels }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="标签均值">
+                    {{ labelV2Result.label_stats.label_mean?.toFixed(4) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="标签标准差">
+                    {{ labelV2Result.label_stats.label_std?.toFixed(4) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="正样本比例" :span="2">
+                    {{ (labelV2Result.label_stats.positive_ratio * 100).toFixed(2) }}%
+                  </el-descriptions-item>
+                </el-descriptions>
+              </div>
+            </div>
+          </div>
+        </el-card>
+
         <!-- 标签预览部分 -->
         <el-card class="calculation-card" style="margin-top: 20px;">
           <template #header>
@@ -520,7 +748,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Refresh, ArrowLeft, ArrowRight, Loading } from '@element-plus/icons-vue'
+import { Refresh, ArrowLeft, ArrowRight, Loading, QuestionFilled } from '@element-plus/icons-vue'
 import { workflowAPI } from '@/api/workflow'
 import { useModuleStatesStore } from '@/stores/moduleStates'
 import { useModuleState } from '@/composables/useModuleState'
@@ -557,6 +785,28 @@ const labelTaskStatus = ref(moduleStore.featureCalculationState.labelTaskStatus)
 const labelProgress = ref(moduleStore.featureCalculationState.labelProgress)
 const labelStatusMessage = ref(moduleStore.featureCalculationState.labelStatusMessage)
 const labelResult = ref(moduleStore.featureCalculationState.labelResult)
+
+// 标签计算V2表单和任务状态
+const labelV2Form = ref({
+  dataFile: '',
+  lookForward: 10,
+  labelType: 'up',
+  filterType: 'rsi',
+  rsiUpThreshold: 30,
+  rsiDownThreshold: 70,
+  ctiUpThreshold: -0.5,
+  ctiDownThreshold: 0.5,
+  methods: ['safety_buffer'],
+  bufferMultiplier: 0.5,
+  avgScoreThreshold: 0.0
+})
+
+const labelV2Loading = ref(false)
+const labelV2TaskId = ref(null)
+const labelV2TaskStatus = ref(null)
+const labelV2Progress = ref(null)
+const labelV2StatusMessage = ref(null)
+const labelV2Result = ref(null)
 
 // 文件列表
 const rawFiles = ref([...moduleStore.featureCalculationState.rawFiles])
@@ -741,9 +991,68 @@ const startLabelCalculation = async () => {
   }
 }
 
+// 开始标签计算V2
+const startLabelCalculationV2 = async () => {
+  if (!labelV2Form.value.dataFile) {
+    ElMessage.warning('请选择数据文件')
+    return
+  }
+
+  if (labelV2Form.value.methods.length === 0) {
+    ElMessage.warning('请至少选择一种改进方法')
+    return
+  }
+
+  labelV2Loading.value = true
+  try {
+    // 根据过滤类型和标签类型选择对应的阈值
+    let threshold
+    if (labelV2Form.value.filterType === 'rsi') {
+      threshold = labelV2Form.value.labelType === 'up'
+        ? labelV2Form.value.rsiUpThreshold
+        : labelV2Form.value.rsiDownThreshold
+    } else {
+      threshold = labelV2Form.value.labelType === 'up'
+        ? labelV2Form.value.ctiUpThreshold
+        : labelV2Form.value.ctiDownThreshold
+    }
+
+    const response = await workflowAPI.startLabelCalculationV2({
+      data_file: labelV2Form.value.dataFile,
+      look_forward: labelV2Form.value.lookForward,
+      label_type: labelV2Form.value.labelType,
+      filter_type: labelV2Form.value.filterType,
+      threshold: threshold,
+      methods: labelV2Form.value.methods,
+      buffer_multiplier: labelV2Form.value.bufferMultiplier,
+      avg_score_threshold: labelV2Form.value.avgScoreThreshold
+    })
+
+    labelV2TaskId.value = response.data.task_id
+    labelV2TaskStatus.value = response.data.status
+    labelV2Progress.value = 0
+    labelV2StatusMessage.value = ''
+    labelV2Result.value = null
+    ElMessage.success('标签计算V2任务已启动')
+
+    pollTaskStatus('labelV2')
+  } catch (error) {
+    ElMessage.error('启动任务失败: ' + error.message)
+  } finally {
+    labelV2Loading.value = false
+  }
+}
+
 // 轮询任务状态
 const pollTaskStatus = async (taskType) => {
-  const taskId = taskType === 'feature' ? featureTaskId.value : labelTaskId.value
+  let taskId
+  if (taskType === 'feature') {
+    taskId = featureTaskId.value
+  } else if (taskType === 'label') {
+    taskId = labelTaskId.value
+  } else if (taskType === 'labelV2') {
+    taskId = labelV2TaskId.value
+  }
 
   const interval = setInterval(async () => {
     try {
@@ -768,7 +1077,7 @@ const pollTaskStatus = async (taskType) => {
           clearInterval(interval)
           ElMessage.error('特征计算失败: ' + response.data.error)
         }
-      } else {
+      } else if (taskType === 'label') {
         labelTaskStatus.value = response.data.status
 
         if (response.data.result) {
@@ -785,6 +1094,24 @@ const pollTaskStatus = async (taskType) => {
         } else if (response.data.status === 'failure') {
           clearInterval(interval)
           ElMessage.error('标签计算失败: ' + response.data.error)
+        }
+      } else if (taskType === 'labelV2') {
+        labelV2TaskStatus.value = response.data.status
+
+        if (response.data.result) {
+          labelV2Progress.value = response.data.result.progress || labelV2Progress.value
+          labelV2StatusMessage.value = response.data.result.status || ''
+        }
+
+        if (response.data.status === 'success') {
+          labelV2Result.value = response.data.result
+          labelV2Progress.value = 100
+          clearInterval(interval)
+          ElMessage.success('标签计算V2完成')
+          loadProcessedFiles()
+        } else if (response.data.status === 'failure') {
+          clearInterval(interval)
+          ElMessage.error('标签计算V2失败: ' + response.data.error)
         }
       }
     } catch (error) {
