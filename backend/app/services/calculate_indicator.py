@@ -218,7 +218,7 @@ def calculate_adx(df: pd.DataFrame, period: int = 14):
     return adx, plus_di, minus_di
 
 def calculate_atr(df: pd.DataFrame, period: int = 14):
-    atr=talib.ATR(df['high_price'], df['low_price'], df['close_price'], timeperiod=period)
+    atr=talib.ATR(df['high'], df['low'], df['close'], timeperiod=period)
     return atr
 
 def calculate_bollinger_bands(df: pd.DataFrame, period: int = 20, std_dev: int = 2):
