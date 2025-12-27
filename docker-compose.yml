@@ -1,6 +1,23 @@
-version: '3.8'
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ec-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ec_predict_flow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ec-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ec_predict_flow"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   redis:
     image: redis:7-alpine
     container_name: ec-redis
@@ -11,6 +28,11 @@ services:
     command: redis-server --appendonly yes
     networks:
       - ec-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   backend:
     build:
@@ -21,16 +43,19 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - backend_data:/app/data
+      - backend_data_v2:/app/data_v2
     environment:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/ec_predict_flow
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - ec-network
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: sh -c "alembic upgrade head && uvicorn app.v2.main:app --host 0.0.0.0 --port 8000 --reload"
 
   celery-worker:
     build:
@@ -39,17 +64,19 @@ services:
     container_name: ec-celery-worker
     volumes:
       - ./backend:/app
-      - backend_data:/app/data
+      - backend_data_v2:/app/data_v2
     environment:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/ec_predict_flow
     depends_on:
-      - redis
-      - backend
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - ec-network
-    command: celery -A app.core.celery_app worker --loglevel=info --pool=solo
+    command: celery -A app.v2.worker.celery_app worker --loglevel=info --pool=solo
 
   frontend:
     build:
@@ -64,9 +91,11 @@ services:
       - ec-network
 
 volumes:
+  postgres_data:
   redis_data:
-  backend_data:
+  backend_data_v2:
 
 networks:
   ec-network:
     driver: bridge
+
